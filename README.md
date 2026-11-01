@@ -1,127 +1,117 @@
-# NeuroScan — brain tumour MRI research project
+# NeuroScan — brain tumour MRI research dashboard
 
-> **Status: under active development.** This project is a research and learning tool, not a medical device. Its outputs are not a diagnosis and must not guide patient care.
+> **Under active development.** NeuroScan is for research and education. It is not a medical device, does not provide a diagnosis, and must not be used to make treatment decisions.
 
-NeuroScan works with 2D T1CE brain MRI slices from BRISC2025. The repository includes an experimental shared-encoder multi-task notebook, a Streamlit inference app, and an earlier modular classifier/segmentation pipeline. The current Streamlit app loads the multi-task checkpoint; it does not train models.
+NeuroScan analyzes single 2D T1CE brain MRI slices for four-way classification (glioma, meningioma, pituitary, non-tumorous) and binary tumour-mask segmentation. The selected model is a shared ConvNeXt-Tiny encoder with separate task heads. A Swin-Tiny candidate is retained for validation comparison.
 
-## Current multi-task run
+## Current saved test results
 
-The checked local run selected **ConvNeXt-Tiny** and produced a multi-task checkpoint and held-out test report. These figures describe that run only; they are not a promise of reproducibility on a different data split, runtime, or model checkpoint.
+These results were generated from the official held-out BRISC2025 test partition using the local selected checkpoint. The checkpoint and raw dataset are excluded from Git; the small, path-scrubbed reports and plots are included. Thresholds were selected on validation data and frozen before this test pass.
 
-| Task | Test result |
+| Measure | Result |
 | --- | ---: |
-| Classification accuracy | 99.0% |
-| Classification macro F1 | 0.9913 |
-| Glioma recall | 98.43% |
-| Segmentation mean Dice | 0.8602 |
-| Segmentation mean IoU | 0.7866 |
+| Test classification accuracy at the saved glioma rule | 99.00% |
+| Test balanced accuracy at the saved glioma rule | 99.10% |
+| Test macro F1 at the saved glioma rule | 0.9913 |
+| Glioma recall at the saved glioma threshold (0.95) | 98.03% |
+| Glioma recall with plain four-class argmax | 98.43% |
+| Macro one-vs-rest ROC-AUC | 0.9978 |
+| Test mean / median Dice | 0.8602 / 0.9262 |
+| Test mean / median IoU | 0.7866 / 0.8625 |
 
-The evaluation plots are generated from the local run:
+Classification used 1,000 official test images. Segmentation used 860 paired annotated test images. All segmentation masks in this dataset subset are tumour-positive; normal-slice segmentation performance is not established.
 
-![Classification confusion matrix](artifacts/plots/test_argmax_confusion_matrix.png)
+![Thresholded test confusion matrix](artifacts/plots/test_confusion_matrix.png)
 
-![Classification ROC](artifacts/plots/test_argmax_roc.png)
+![Official test ROC curves](artifacts/plots/test_roc_curves.png)
 
-![Segmentation Dice and IoU](artifacts/plots/test_dice_iou.png)
+![Test Dice and IoU distributions](artifacts/plots/test_dice_iou_distribution.png)
 
-The trained `.pth` checkpoint files are intentionally excluded from Git because they are large. Train the notebook to create a local checkpoint before running the app.
+![Test MRI segmentation examples](artifacts/plots/test_segmentation_examples.png)
 
-## What is included
+## Dashboard features
 
-- `train_brain_tumor_multitask.ipynb` — audit and train a shared ConvNeXt-Tiny or Swin-Tiny encoder with classification and binary segmentation heads; select thresholds using validation data and evaluate the held-out test split.
-- `app.py` — upload one image, classify it, display a predicted segmentation overlay, and download the predicted mask.
-- `src/` and `scripts/` — modular dataset auditing, duplicate-aware split generation, baseline classifier and U-Net/Attention U-Net training, inference and evaluation utilities.
-- `pages/` — additional pages from the modular Streamlit interface. The notebook-oriented `app.py` is the documented entry point for the current multi-task model.
-- `tests/` — regression and component tests.
+- **Overview:** model and dataset facts, actual official-test results, validation-only candidate comparison, thresholds, parameter count, and recorded training duration.
+- **MRI workspace:** single-image and batch JPG/JPEG/PNG inference, class probabilities, predicted binary mask, adjustable overlay opacity, inference time, and downloadable results.
+- **Evaluation:** per-class precision/recall/F1, interactive confusion matrix and score distributions, ROC curves/AUC, Dice/IoU distributions, and example predictions beside reference masks.
+- **Method & model:** preprocessing, split and threshold methodology, checkpoint metadata, dataset details, and research limitations.
 
-## Requirements
+The app starts without the dataset or a model checkpoint. Saved evaluation results can still be reviewed; image inference reports a clear missing-checkpoint status until weights are supplied.
 
-- Linux or another Python 3.10+ environment
-- 16 GB RAM recommended
-- NVIDIA GPU with CUDA recommended for training; CPU fallback is supported but training will be much slower
-- BRISC2025 dataset access through KaggleHub (or a locally supplied dataset)
+## Requirements and installation
 
-Install PyTorch and torchvision for your platform using the [official PyTorch installation selector](https://pytorch.org/get-started/locally/). Then install the project dependencies:
+Use Python 3.11 or newer. For NVIDIA GPU training, install a CUDA-enabled PyTorch/torchvision pair that matches your driver using the [official PyTorch selector](https://pytorch.org/get-started/locally/) before installing the remaining project dependencies. CPU inference and training are supported, though training is slower.
 
 ```bash
-git clone <your-repository-url>
-cd <repository-directory>
+git clone https://github.com/Ahmad-o-Zakariya/neuroscan-brain-mri.git
+cd neuroscan-brain-mri
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+streamlit run app.py
 ```
 
-If the environment does not provide CUDA, the project uses CPU automatically. On GPU systems, install a CUDA-enabled PyTorch build before the requirements so pip can use the matching installed version.
+The app can also be launched from another working directory by passing the repository's absolute `app.py` path. Model and report locations are resolved relative to the repository, not the shell's current directory.
 
-## Dataset setup and audit
+## Dataset setup and model training
 
-The raw dataset and generated split CSVs are excluded from Git. Download BRISC2025 with KaggleHub:
+The raw BRISC2025 dataset, generated split CSVs, and large model weights are not stored in Git. Download with KaggleHub after configuring Kaggle access (for example, export `KAGGLE_API_TOKEN` in your shell):
 
 ```bash
 python scripts/download_dataset.py
+python scripts/audit_dataset.py
 ```
 
-Configure KaggleHub credentials using `KAGGLE_API_TOKEN` or its supported login flow. To use an existing local copy, place it under `data/raw/` or pass its directory to the audit command:
+The audit writes reports under `reports/`. For an existing dataset elsewhere, pass its root with `--data-root` or set `NEUROSCAN_DATA_ROOT` for the notebook. The notebook also accepts `NEUROSCAN_PROJECT_ROOT`, `NEUROSCAN_SPLIT_DIR`, and `NEUROSCAN_OUTPUT_ROOT` overrides.
 
-```bash
-python scripts/audit_dataset.py --data-root data/raw --report-dir reports
-```
-
-Run the audit before training. It inspects the dataset layout, image integrity, image-mask pairing and dimensions, and reports findings under `reports/`. Do not commit the raw dataset; follow its source terms and access requirements.
-
-## Train the multi-task model and run the app
-
-Start Jupyter from the repository root:
+Open the repository notebook and run cells in order:
 
 ```bash
 jupyter lab train_brain_tumor_multitask.ipynb
 ```
 
-Review the configuration cell, set `DATA_ROOT`, `SPLIT_DIR`, and `OUTPUT_ROOT` for your machine, and run the notebook cells in order. It checks the generated splits for duplicate leakage, compares ConvNeXt-Tiny and Swin-Tiny using validation results, calibrates tumour and mask thresholds on validation data, and evaluates the selected model on the official test data. The notebook saves checkpoints under `artifacts/checkpoints/`, metrics under `outputs/`, and figures under `artifacts/plots/`.
+It checks split integrity, trains ConvNeXt-Tiny and Swin-Tiny candidates, selects the model and both thresholds using validation data, then evaluates the selected checkpoint on the official held-out test partition. Checkpoints are written to `artifacts/checkpoints/`; run outputs go to `outputs/` and plots to `artifacts/plots/`.
 
-Once `artifacts/checkpoints/best_multitask_model.pth` exists, launch the app:
+To run the official test evaluation again after installing the dataset and selected checkpoint:
 
 ```bash
-streamlit run app.py
+python scripts/evaluate_multitask.py --data-root data/raw/brisc2025
 ```
 
-Open the local URL printed by Streamlit. Upload a supported JPG or PNG MRI slice and select **Predict**. The app reports one 2D-slice prediction and generated mask; it does not perform 3D analysis or clinical localization.
+The script does not train, select models, or tune thresholds from test data. It writes path-scrubbed metrics, a per-class report, probabilities without image identifiers, and figures to `artifacts/reports/` and `artifacts/plots/`. Override the checkpoint with `--checkpoint` or `NEUROSCAN_CHECKPOINT`.
 
-## Modular training and evaluation utilities
+## Legacy modular utilities
 
-The repository also contains a separate modular baseline workflow. It writes generated splits under `data/splits/` and checkpoints under `artifacts/checkpoints/`:
+The earlier modular baseline is preserved for CLI use. Its EfficientNet-B0 classifier and U-Net/Attention U-Net segmentation checkpoints are separate from the multi-task dashboard checkpoint:
 
 ```bash
 python scripts/train_classifier.py --smoke-test
-python scripts/train_segmenter.py --smoke-test
-```
-
-Remove `--smoke-test` to start actual training. The segmenter accepts `--model unet` or `--model attention_unet`. Evaluate trained modular checkpoints with:
-
-```bash
+python scripts/train_segmenter.py --smoke-test --model attention_unet
 python scripts/evaluate.py --task all --split validation
 python scripts/evaluate.py --task all --split test
 ```
 
-Validation evaluation selects thresholds from validation records. Test evaluation uses the saved calibration when available. These scripts use the modular baseline checkpoints; they are separate from the notebook's multi-task checkpoint and the `app.py` loader.
+Remove `--smoke-test` to train. The segmenter supports `--model unet` and `--model attention_unet`. These legacy CLI programs resolve their default data, checkpoint, and report paths from the repository root.
 
 ## Verification
-
-From the activated environment, run:
 
 ```bash
 python -m compileall .
 python -m pytest -q
 ```
 
-The smoke-test commands above check that the modular classifier and segmenter can complete a small forward/backward pass. They do not train full models or establish clinical performance.
+## Development notes and limitations
 
-## Limitations
+- Checkpoints and source images are excluded from Git because of size and dataset terms. Download/train locally or provide a compatible checkpoint at `artifacts/checkpoints/best_multitask_model.pth` (or set `NEUROSCAN_CHECKPOINT`).
+- The segmentation model was trained and evaluated only on tumour-positive annotated image-mask pairs. The app shows this limitation when reviewing non-tumorous classification outputs.
+- The model resizes 2D slices to the checkpoint input size. It does not process 3D volumes or estimate physical dimensions.
+- Source patient identifiers are unavailable, so patient-level independence cannot be established.
+- The source label `non_tumorous` is not a clinical finding.
 
-- The segmentation subset contains tumour-positive masks only; normal-slice segmentation performance is not established.
-- Inputs are single 2D T1CE slices, not 3D MRI volumes.
-- Available source identifiers do not establish patient-level independence.
-- `non_tumorous` is a dataset label, not a clinical finding.
-- This software is experimental, may contain errors, and is not intended for diagnosis or treatment decisions.
+## License
 
+<<<<<<< HEAD
+=======
+The NeuroScan project code is licensed under the [MIT License](LICENSE). The BRISC2025 dataset is separate and remains subject to its own license, terms, and attribution requirements; the MIT License does not apply to the dataset or other third-party materials.
+>>>>>>> 6180b20 (Repair NeuroScan and add unified research dashboard)

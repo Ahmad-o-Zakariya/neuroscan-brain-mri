@@ -1,0 +1,15 @@
+torch>=2.2
+torchvision>=0.17
+Pillow>=10.0
+numpy>=1.26
+pandas>=2.1
+scikit-learn>=1.4
+matplotlib>=3.8
+streamlit>=1.32
+kagglehub>=0.3
+PyYAML>=6.0
+opencv-python-headless>=4.9
+pytest>=8.0
+jupyterlab>=4.0
+nbformat>=5.9
+

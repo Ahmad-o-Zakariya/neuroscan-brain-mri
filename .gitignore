@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Jupyter and editor/OS files
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Downloaded dataset and machine-specific generated split paths
+data/raw/**
+!data/raw/.gitkeep
+data/splits/*.csv
+
+# Large trained weights and local training outputs
+artifacts/checkpoints/*
+!artifacts/checkpoints/.gitkeep
+outputs/*
+!outputs/.gitkeep
+artifacts/reports/*
+!artifacts/reports/.gitkeep
+reports/*.json
+reports/*.md
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Local AI coding assistant configuration
+.claude/
+.agents/

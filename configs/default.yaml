@@ -1,0 +1,20 @@
+dataset:
+  handle: briscdataset/brisc2025
+  root: data/raw
+  seed: 42
+classification:
+  architecture: efficientnet_b0
+  input_size: 224
+  batch_size: 8
+  epochs: 20
+  workers: 2
+segmentation:
+  architecture: attention_unet
+  input_size: 256
+  batch_size: 4
+  base_channels: 16
+  epochs: 30
+  workers: 2
+inference:
+  tumour_threshold: 0.5
+  mask_threshold: 0.5

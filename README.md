@@ -111,7 +111,4 @@ python -m pytest -q
 
 ## License
 
-<<<<<<< HEAD
-=======
 The NeuroScan project code is licensed under the [MIT License](LICENSE). The BRISC2025 dataset is separate and remains subject to its own license, terms, and attribution requirements; the MIT License does not apply to the dataset or other third-party materials.
->>>>>>> 6180b20 (Repair NeuroScan and add unified research dashboard)

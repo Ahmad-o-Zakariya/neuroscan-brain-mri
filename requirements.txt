@@ -1,11 +1,12 @@
-torch>=2.2
-torchvision>=0.17
+torch>=2.6,<3
+torchvision>=0.21,<1
 Pillow>=10.0
-numpy>=1.26
-pandas>=2.1
+numpy>=1.26,<3
+pandas>=2.1,<4
 scikit-learn>=1.4
 matplotlib>=3.8
-streamlit>=1.32
+altair>=5.0,<7
+streamlit>=1.66,<2
 kagglehub>=0.3
 PyYAML>=6.0
 opencv-python-headless>=4.9

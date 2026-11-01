@@ -1,7 +1,8 @@
 """Evaluate frozen models; thresholds are fit only on generated validation CSVs."""
 import argparse,json,sys
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 import numpy as np
 import pandas as pd
 import torch
@@ -67,11 +68,11 @@ def _load_segmenter(path,device,architecture=None):
     model=build_segmenter(arch,md.get("base_channels",16));load_checkpoint(path,model,device,arch);model.to(device).eval();return model,md
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--task",choices=["classifier","segmenter","all"],default="all");p.add_argument("--split",choices=["test","validation"],default="test");p.add_argument("--data-root",default="data/raw");p.add_argument("--split-dir",default="data/splits");p.add_argument("--architecture",choices=["unet","attention_unet"],default=None);a=p.parse_args()
-    root=discover_root(a.data_root);device="cuda" if torch.cuda.is_available() else "cpu";out=Path("reports");figdir=out/"figures";out.mkdir(exist_ok=True);figdir.mkdir(exist_ok=True);cal_path=out/"calibration.json";cal=json.loads(cal_path.read_text()) if cal_path.exists() else {}; calibration_changed=False
+    p=argparse.ArgumentParser();p.add_argument("--task",choices=["classifier","segmenter","all"],default="all");p.add_argument("--split",choices=["test","validation"],default="test");p.add_argument("--data-root",default=str(ROOT / "data/raw"));p.add_argument("--split-dir",default=str(ROOT / "data/splits"));p.add_argument("--architecture",choices=["unet","attention_unet"],default=None);a=p.parse_args()
+    root=discover_root(a.data_root);device="cuda" if torch.cuda.is_available() else "cpu";out=ROOT/"reports";figdir=out/"figures";out.mkdir(exist_ok=True);figdir.mkdir(exist_ok=True);cal_path=out/"calibration.json";cal=json.loads(cal_path.read_text()) if cal_path.exists() else {}; calibration_changed=False
     classifier=None;cmeta={};crows=[];probs=None;y=None;pred=None
     if a.task in ("classifier","all"):
-        path=Path("artifacts/checkpoints/classifier_best.pth")
+        path=ROOT/"artifacts/checkpoints/classifier_best.pth"
         if not path.exists(): raise SystemExit(f"Missing {path}")
         classifier,cmeta=_load_classifier(path,device);crows=_records(root,"classification",a.split,a.split_dir)
         if not crows: raise SystemExit(f"No classification records available for split={a.split}.")
@@ -93,7 +94,7 @@ def main():
             candidates=[x for x in ("attention_unet","unet") if Path(f"artifacts/checkpoints/segmenter_{x}_best.pth").exists()]
             if not candidates: raise SystemExit("No segmenter checkpoint found (expected segmenter_unet_best.pth or segmenter_attention_unet_best.pth).")
             architecture=candidates[0]
-        path=Path(f"artifacts/checkpoints/segmenter_{architecture}_best.pth")
+        path=ROOT/f"artifacts/checkpoints/segmenter_{architecture}_best.pth"
         if not path.exists(): raise SystemExit(f"Missing {path}")
         segmenter,smeta=_load_segmenter(path,device,architecture);srows=_records(root,"segmentation",a.split,a.split_dir)
         if not srows: raise SystemExit(f"No segmentation records available for split={a.split}.")

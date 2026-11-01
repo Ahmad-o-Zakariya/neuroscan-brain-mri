@@ -125,6 +125,3 @@ The smoke-test commands above check that the modular classifier and segmenter ca
 - `non_tumorous` is a dataset label, not a clinical finding.
 - This software is experimental, may contain errors, and is not intended for diagnosis or treatment decisions.
 
-## License and data
-
-No project software license is currently specified. Add a `LICENSE` file before granting others permission to reuse or distribute the project. BRISC2025 is a separate third-party dataset; consult its source page and terms before using or sharing it.
